@@ -56,5 +56,86 @@ for i <- 1..10 do
 end
 ```
 
+## The Processes
+
+One interesting thing is that it does not matter to other processes if a given process fail. Check this:
+
+```elixir
+for i <- 1..10 do
+  spawn(fn ->
+    400..500 |> Enum.random() |> Process.sleep()
+    if Integer.mod(i, 2) != 0, do: raise "That's odd, #{i}"
+    IO.puts("Hello CapiConf #{i}")
+  end)
+end
+```
+
+As you saw, the odd numbers failed, but the even still work flawlessly.
+
+Now let's see a bit more complex process stuff, let's start by creating a process that lives forever:
+
+```elixir
+defmodule Highlander do
+  def rise do
+    spawn(__MODULE__, :live, [1])
+  end
+
+  def live(years) do
+    IO.puts("Alive for #{years} years")
+    Process.sleep(1000)
+    live(years + 1)
+  end
+end
+
+highlander = Highlander.rise()
+```
+
+Nice, he lives forever this way, but now let's cut his head off:
+
+```elixir
+Process.exit(highlander, :kill)
+```
+
+Cool, that one will not bother us anymore.
+
+Let's see how processes interact to each other now:
+
+```elixir
+defmodule WarBoy do
+  def rise do
+    spawn(__MODULE__, :drive, [0])
+  end
+
+  def drive(index) do
+    receive do
+      :continue -> 
+        [
+          "I live, I die! I live again!",
+          "Oh what a day. What a lovely day!",
+          "If I'm gonna die, I'm gonna die historic on the fury road!",
+        ]
+        |> Enum.at(Integer.mod(index, 3))
+        |> IO.puts()
+
+        drive(index + 1)
+
+      :die ->
+        IO.puts("Witness meeeee!!")
+    end
+  end
+end
+
+nux = WarBoy.rise()
+send(nux, :continue)
+send(nux, :continue)
+send(nux, :continue)
+send(nux, :continue)
+send(nux, :die)
+```
+
+You see, it's just a matter of using the `send` and `receive` functions to communicate to each other.
+
+All process interaction is made through this messages, `send` adds the message to that process mailbox, and `receive` reads from the mailbox sequentially. If the mailbox is empty, `receive` will put the process on standby (timeout configurable).
+
 ## The Market
 
