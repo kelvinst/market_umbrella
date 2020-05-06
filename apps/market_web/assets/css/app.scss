@@ -90,7 +90,7 @@
   display: none;
 }
 
-.market, .shop, .lines, .line, .cashier, .customer, .line-customers, .cashiers {
+.market, .shop, .customers-done, .lines, .line, .cashier, .customer, .line-customers, .cashiers {
   border: 1px solid gray;
   border-radius: 3px;
   margin: 3px;
@@ -101,7 +101,7 @@
   background-color: pink;
 }
 
-.shop, .lines {
+.shop, .lines, .customers-done {
   background-color: lightyellow;
 }
 
@@ -134,4 +134,8 @@
 
 .cashier {
   background-color: azure;
+}
+
+input[type=text] {
+  background-color: white;
 }

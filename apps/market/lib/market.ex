@@ -10,10 +10,10 @@ defmodule Market do
   alias Market.Line
   alias Market.Cashier
 
-  defstruct [:pid, lines: [], customers: []]
+  defstruct [:pid, multiplier: 1, lines: [], customers: []]
 
-  def create do
-    {:ok, pid} = GenServer.start_link(__MODULE__, nil)
+  def create(multiplier) do
+    {:ok, pid} = GenServer.start_link(__MODULE__, multiplier)
     get(pid)
   end
 
@@ -48,8 +48,8 @@ defmodule Market do
   # Callbacks
 
   @impl true
-  def init(_) do
-    {:ok, %__MODULE__{pid: self()}}
+  def init(multiplier) do
+    {:ok, %__MODULE__{pid: self(), multiplier: multiplier}}
   end
 
   @impl true

@@ -28,8 +28,8 @@ defmodule Market.Line do
     GenServer.cast(line.pid, {:add_customer, customer})
   end
 
-  def new_cashier(%Line{} = line) do
-    cashier = Cashier.create(line)
+  def new_cashier(%Line{} = line, reductions) do
+    cashier = Cashier.create(line, reductions)
     GenServer.cast(line.pid, {:add_cashier, cashier})
     cashier
   end
@@ -57,7 +57,7 @@ defmodule Market.Line do
         Market.broadcast(new_state.market, new_state, :updated)
         {:reply, next_customer, new_state}
 
-      [] -> 
+      [] ->
         {:reply, nil, state}
     end
   end

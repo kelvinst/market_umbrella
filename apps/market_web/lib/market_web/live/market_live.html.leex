@@ -1,74 +1,118 @@
-<section class="market">
-  <h3><%= @market.pid %></h3>
+<form phx-submit="new_market">
+  <div class="row">
+    <input id="multiplier" name="multiplier" type="text" class="phx-blur-loading" placeholder="Multiplier">
+    <button phx-disable-with="Creating..." type="submit">New market</button>
+  </div>
+</form>
 
-  <section class="shop">
-    <h4>Shop <button phx-click="new_customer">New Customer</button></h4>
+<%= if @market do %>
+  <section class="market">
+    <h3><%= @market.pid %> - <%= @market.multiplier %>X</h3>
 
-    <section class="customers">
-      <%= for {_, customer} <- @customers, 
-              customer.state in ~w(shopping done_shopping) do %>
-        <div class="customer <%= customer.state %>">
-          <b>CUSTOMER: <%= customer.pid %></b><br />
-          CART: <%= customer.items_took %><br />
-          BAG: <%= customer.items_processed %>
+    <section class="shop">
+      <h4>
+        Shop 
+        <button phx-disable-with="Creating..." phx-click="new_customer" value="small">Small Customer</button>
+        <button phx-disable-with="Creating..." phx-click="new_customer" value="medium">Medium Customer</button>
+        <button phx-disable-with="Creating..." phx-click="new_customer" value="large">Large Customer</button>
+      </h4>
+
+      <section class="customers">
+        <%= @customers
+            |> Stream.map(&elem(&1, 1))
+            |> Enum.sort_by(&(&1.created_at))
+            |> Stream.filter(&(&1.state in ~w(shopping done_shopping)))
+            |> Enum.map(fn customer -> %>
+          <div class="customer <%= customer.state %>">
+            <b>CUSTOMER: <%= customer.pid %></b><br />
+            CART: <%= customer.items_took %><br />
+            BAG: <%= customer.items_processed %>
+          </div>
+        <% end) %>
+      </section>
+    </section>
+
+    <section class="lines">
+      <h4>
+        Lines 
+        <button phx-disable-with="Creating..." phx-click="new_line">New Line</button>
+      </h4>
+
+      <%= for {_, line} <- @lines do %>
+        <div class="line">
+          <div class="row">
+            <div class="column">
+              <b>LINE: <%= line.pid %></b>
+            </div>
+          </div>
+
+          <form phx-submit="new_cashier" class="container">
+            <div class="row">
+              <input id="line" name="line" type="hidden" value="<%= line.pid %>">
+              <input id="reductions" name="reductions" type="text" class="phx-blur-loading" placeholder="Reductions">
+              <button phx-disable-with="Creating..." type="submit">New cashier</button>
+            </div>
+          </form>
+
+          <div class="row">
+            <div class="column">
+              <div class="line-customers">
+                <h5>Customers</h5>
+
+                <%= for stale_customer <- line.customers, 
+                    customer = @customers[stale_customer.pid] do %>
+                  <div class="customer <%= customer.state %>">
+                    <b>CUSTOMER: <%= customer.pid %></b><br />
+                    CART: <%= customer.items_took %><br />
+                    BAG: <%= customer.items_processed %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+            <div class="column">
+              <div class="cashiers">
+                <h5>Cashiers</h5>
+
+                <%= for stale_cashier <- line.cashiers,
+                        cashier = @cashiers[stale_cashier.pid] do %>
+                  <div class="cashier">
+                    <b>CASHIER: <%= cashier.pid %></b><br />
+                    REDUCTIONS: <%= cashier.reductions %></b><br />
+                    
+                    <%= if cashier.customer do %>
+                      <% customer = @customers[cashier.customer.pid] %>
+                      <div class="customer <%= customer.state %>">
+                        <b>CUSTOMER: <%= customer.pid %></b><br />
+                        CART: <%= customer.items_took %><br />
+                        BAG: <%= customer.items_processed %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
         </div>
       <% end %>
     </section>
+
+    <section class="customers-done">
+      <h4>Done</h4>
+        
+      <section class="customers">
+        <%= @customers
+            |> Stream.map(&elem(&1, 1))
+            |> Enum.sort_by(&(&1.finished_at))
+            |> Stream.filter(&(&1.state == "done"))
+            |> Enum.map(fn customer -> %>
+          <div class="customer <%= customer.state %>">
+            <b>CUSTOMER: <%= customer.pid %></b><br />
+            ITEMS: <%= customer.items_to_take %><br />
+            TIME: <%= Float.round((customer.finished_at - customer.created_at) / 1000 * @market.multiplier, 2)  %> min<br />
+            TIME/ITEM: <%= Float.round(((customer.finished_at - customer.created_at) / 1000 * @market.multiplier) / customer.items_to_take, 2) %> min/item
+          </div>
+        <% end) %>
+      </section>
+    </section>
   </section>
-
-  <section class="lines">
-    <h4>
-      Lines 
-      <button phx-click="new_line">New Line</button>
-    </h4>
-
-    <%= for {_, line} <- @lines do %>
-      <div class="line">
-        <div class="row">
-          <div class="column">
-            <b>LINE: <%= line.pid %></b>
-            <button phx-click="new_cashier" value="<%= line.pid %>">New Cashier</button>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="column">
-            <div class="line-customers">
-              <h5>Customers</h5>
-
-              <%= for stale_customer <- line.customers, 
-                  customer = @customers[stale_customer.pid] do %>
-                <div class="customer <%= customer.state %>">
-                  <b>CUSTOMER: <%= customer.pid %></b><br />
-                  CART: <%= customer.items_took %><br />
-                  BAG: <%= customer.items_processed %>
-                </div>
-              <% end %>
-            </div>
-          </div>
-          <div class="column">
-            <div class="cashiers">
-              <h5>Cashiers</h5>
-
-              <%= for stale_cashier <- line.cashiers,
-                      cashier = @cashiers[stale_cashier.pid] do %>
-                <div class="cashier">
-                  <b>CASHIER: <%= cashier.pid %></b><br />
-                  
-                  <%= if cashier.customer do %>
-                    <% customer = @customers[cashier.customer.pid] %>
-                    <div class="customer <%= customer.state %>">
-                      <b>CUSTOMER: <%= customer.pid %></b><br />
-                      CART: <%= customer.items_took %><br />
-                      BAG: <%= customer.items_processed %>
-                    </div>
-                  <% end %>
-                </div>
-              <% end %>
-            </div>
-          </div>
-        </div>
-      </div>
-    <% end %>
-  </section>
-</section>
+<% end %>
