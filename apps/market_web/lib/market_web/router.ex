@@ -17,7 +17,8 @@ defmodule MarketWeb.Router do
   scope "/", MarketWeb do
     pipe_through :browser
 
-    live "/", PageLive, :index
+    live "/", MarketLive, :index
+    # live "/:id", MarketLive, :show
   end
 
   # Other scopes may use custom stacks.

@@ -89,3 +89,49 @@
 .alert:empty {
   display: none;
 }
+
+.market, .shop, .lines, .line, .cashier, .customer, .line-customers, .cashiers {
+  border: 1px solid gray;
+  border-radius: 3px;
+  margin: 3px;
+  padding: 3px;
+}
+
+.market {
+  background-color: pink;
+}
+
+.shop, .lines {
+  background-color: lightyellow;
+}
+
+@keyframes fadein {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.customer {
+  display: inline-block;
+  width: 200px;
+  animation: fadein 1s;
+
+  &.shopping, &.processing { background-color: cyan; }
+  &.done_shopping, &.done { background-color: lightgreen; }
+}
+
+.line {
+  background-color: lightgrey;
+
+  .customer {
+    display: block;
+    width: inherit;
+  }
+}
+
+.line-customers, .cashiers {
+  background-color: lightblue;
+}
+
+.cashier {
+  background-color: azure;
+}

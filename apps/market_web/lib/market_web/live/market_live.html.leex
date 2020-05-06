@@ -1,0 +1,74 @@
+<section class="market">
+  <h3><%= @market.pid %></h3>
+
+  <section class="shop">
+    <h4>Shop <button phx-click="new_customer">New Customer</button></h4>
+
+    <section class="customers">
+      <%= for {_, customer} <- @customers, 
+              customer.state in ~w(shopping done_shopping) do %>
+        <div class="customer <%= customer.state %>">
+          <b>CUSTOMER: <%= customer.pid %></b><br />
+          CART: <%= customer.items_took %><br />
+          BAG: <%= customer.items_processed %>
+        </div>
+      <% end %>
+    </section>
+  </section>
+
+  <section class="lines">
+    <h4>
+      Lines 
+      <button phx-click="new_line">New Line</button>
+    </h4>
+
+    <%= for {_, line} <- @lines do %>
+      <div class="line">
+        <div class="row">
+          <div class="column">
+            <b>LINE: <%= line.pid %></b>
+            <button phx-click="new_cashier" value="<%= line.pid %>">New Cashier</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="column">
+            <div class="line-customers">
+              <h5>Customers</h5>
+
+              <%= for stale_customer <- line.customers, 
+                  customer = @customers[stale_customer.pid] do %>
+                <div class="customer <%= customer.state %>">
+                  <b>CUSTOMER: <%= customer.pid %></b><br />
+                  CART: <%= customer.items_took %><br />
+                  BAG: <%= customer.items_processed %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+          <div class="column">
+            <div class="cashiers">
+              <h5>Cashiers</h5>
+
+              <%= for stale_cashier <- line.cashiers,
+                      cashier = @cashiers[stale_cashier.pid] do %>
+                <div class="cashier">
+                  <b>CASHIER: <%= cashier.pid %></b><br />
+                  
+                  <%= if cashier.customer do %>
+                    <% customer = @customers[cashier.customer.pid] %>
+                    <div class="customer <%= customer.state %>">
+                      <b>CUSTOMER: <%= customer.pid %></b><br />
+                      CART: <%= customer.items_took %><br />
+                      BAG: <%= customer.items_processed %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </section>
+</section>

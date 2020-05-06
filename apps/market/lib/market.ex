@@ -10,62 +10,73 @@ defmodule Market do
   alias Market.Line
   alias Market.Cashier
 
-  defstruct [cashiers: [], lines: [], customers: []]
+  defstruct [:pid, lines: [], customers: []]
 
   def create do
-    GenServer.start_link(__MODULE__, nil)
+    {:ok, pid} = GenServer.start_link(__MODULE__, nil)
+    get(pid)
   end
 
-  def new_customer(market, items_to_take) do
-    {:ok, customer} = Customer.create(market, items_to_take)
-    GenServer.cast(market, {:add_customer, customer})
+  def get(pid) do
+    GenServer.call(pid, :get)
+  end
+
+  def best_line(%Market{} = market) do
+    GenServer.call(market.pid, :best_line)
+  end
+
+  def new_customer(%Market{} = market, items_to_take) do
+    customer = Customer.create(market, items_to_take)
+    GenServer.cast(market.pid, {:add_customer, customer})
     customer
   end
 
-  def new_line(market) do
-    {:ok, line} = Line.create(market)
-    GenServer.cast(market, {:add_line, line})
+  def new_line(%Market{} = market) do
+    line = Line.create(market)
+    GenServer.cast(market.pid, {:add_line, line})
     line
   end
 
-  def new_cashier(market, line) do
-    {:ok, cashier} = Cashier.create(market, line)
-    GenServer.cast(market, {:add_cashier, cashier})
-    cashier
+  def subscribe(%Market{pid: pid}) do
+    Phoenix.PubSub.subscribe(Market.PubSub, "market:#{pid}")
   end
 
-  def best_line(market) do
-    GenServer.call(market, :best_line)
+  def broadcast(%Market{pid: pid}, resource, event) do
+    Phoenix.PubSub.broadcast(Market.PubSub, "market:#{pid}", {resource, event})
   end
 
   # Callbacks
-  
+
   @impl true
   def init(_) do
-    {:ok, %__MODULE__{}}
+    {:ok, %__MODULE__{pid: self()}}
+  end
+
+  @impl true
+  def handle_call(:get, _from, state) do
+    {:reply, state, state}
+  end
+
+  def handle_call(:best_line, _from, state) do
+    {best_line, _count} =
+      state.lines
+      |> Enum.map(fn line ->
+        {line, Task.async(Line, :customer_count, [line])}
+      end)
+      |> Enum.map(fn {line, task} ->
+        {line, Task.await(task)}
+      end)
+      |> Enum.min_by(&elem(&1, 1), fn -> {nil, nil} end)
+
+    {:reply, best_line, state}
   end
 
   @impl true
   def handle_cast({:add_customer, customer}, state) do
     {:noreply, Map.update(state, :customers, [], &[customer | &1])}
   end
-  
+
   def handle_cast({:add_line, line}, state) do
     {:noreply, Map.update(state, :lines, [], &[line | &1])}
-  end
-
-  def handle_cast({:add_cashier, cashier}, state) do
-    {:noreply, Map.update(state, :cashiers, [], &[cashier | &1])}
-  end
-
-  @impl true
-  def handle_call(:best_line, state) do
-    best_line = 
-      state.lines
-      |> Enum.map(&Task.async(Line, :customer_count, [&1])
-      |> Enum.map(&Task.await/1)
-      |> Enum.min()
-
-    {:reply, best_line, state}
   end
 end
