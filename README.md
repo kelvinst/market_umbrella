@@ -1,53 +1,74 @@
 # Elixir |> BEAM() == ❤
 
-This project was created for a given presentation, so there is some context you might be missing, I will update it here when the slides are available publicly
+This project was created for a given presentation, so there is some context to it, please read the [presentation](./priv/presentations/en.pdf') and get back here when you get on the "Practice" slide.
 
-## The Basics
+## Practice
 
-Starting off with the basics, here is a hello world:
+### Data
+
+Here is some data for you:
+
+```elixir
+1
+1.2
+[1, 2, 3]
+:atom
+"string"
+```
+
+You can investigate a bit about the data using the function `i`:
+
+```elixir
+i("Hello CapiConf")
+```
+
+### Functions
+
+You already saw a function, the `i` one, but here is another one:
+
+```elixir
+h()
+```
+
+It prints some helpful info, so enjoy yourself at home!
+
+Now let's make a hello world:
 
 ```elixir
 IO.puts("Hello CapiConf")
 ```
 
-So in this case `"Hello CapiConf"` is the data, and `IO.puts` is the behavior, that takes that data as a parameter and prints it to the STDIO.
+So in this case `"Hello CapiConf"` is the data, and `IO.puts` is the function, that takes that data as a parameter and prints it to the STDIO.
+
+If you want, you can investigate function using the macro `h`, like this:
+
+```elixir
+h(IO.puts)
+```
+
+It will print the help page for that function.
+
+### Processes
+
+So finally, here is a process:
+
+```elixir
+spawn(IO, :puts, ["Hello CapiConf"])
+```
+
+So `spawn` is a function that starts a process that will run the given function with the given parameters.
+
+Now go back to the [presentation](./priv/presentations/en.pdf'), and get back here when you get to "More Practice"
+
+## More Practice
+
+### Everything is a process
+
+In fact, even `iex` is a process, that is waiting for you to send him something to execute.
+
+### Concurrent and lightweight
 
 Now let's make it a bit more complex, doing it multiple times and faking some processing (also known as sleeping a bit):
-
-```elixir
-for i <- 1..10 do
-  Process.sleep(500)
-  IO.puts("Hello CapiConf #{i}")
-end
-```
-
-Cool, as you saw, it took a while now to print it all.
-
-But what if we want it to take less time? Simple, do them on separate processes using `spawn`:
-
-```elixir
-for i <- 1..10 do
-  spawn(fn ->
-    Process.sleep(500)
-    IO.puts("Hello CapiConf #{i}")
-  end)
-end
-```
-
-The `spawn` function starts off a new process to run them concurrently and in an async manner.
-
-But hey, did you see how it actually printed them sequentially? Well, that's not always the case:
-
-```elixir
-for i <- 1..10 do
-  spawn(fn ->
-    400..500 |> Enum.random() |> Process.sleep()
-    IO.puts("Hello CapiConf #{i}")
-  end)
-end
-```
-
-This way you can see how all of the processes execute at the same time, as opposed to not using the spawn, for example:
 
 ```elixir
 for i <- 1..10 do
@@ -56,33 +77,42 @@ for i <- 1..10 do
 end
 ```
 
-## The Processes
-
-One interesting thing is that it does not matter to other processes if a given process fail. Check this:
+So basically a sequential counter with some random processing time from 400 to 500 milliseconds. But what happens if I spawn a process for each iteration?
 
 ```elixir
 for i <- 1..10 do
   spawn(fn ->
     400..500 |> Enum.random() |> Process.sleep()
-    if Integer.mod(i, 2) != 0, do: raise "That's odd, #{i}"
     IO.puts("Hello CapiConf #{i}")
   end)
 end
 ```
 
-As you saw, the odd numbers failed, but the even still work flawlessly.
+As you see, the counter is not sequential anymore, cause processes run concurrently. 
 
-Now let's see a bit more complex process stuff, let's start by creating a process that lives forever:
+Also, you might see some performance improvements, let's see how that goes with lots of processes:
+
+```elixir
+for i <- 1..10000 do
+  spawn(fn ->
+    400..500 |> Enum.random() |> Process.sleep()
+    IO.puts("Hello CapiConf #{i}")
+  end)
+end
+```
+
+So as you see, processes start and finish pretty quickly too. Took a while to finish mostly because of IO, I guarantee.
+
+Time to live forever now, let's start a process that do not die:
 
 ```elixir
 defmodule Highlander do
   def rise do
-    spawn(__MODULE__, :live, [1])
+    spawn(__MODULE__, :live, [0])
   end
 
   def live(years) do
     IO.puts("Alive for #{years} years")
-    Process.sleep(1000)
     live(years + 1)
   end
 end
@@ -90,15 +120,17 @@ end
 highlander = Highlander.rise()
 ```
 
-Nice, he lives forever this way, but now let's cut his head off:
+Nice, he lives forever this way, unless you cut off his head:
 
 ```elixir
 Process.exit(highlander, :kill)
 ```
 
-Cool, that one will not bother us anymore.
+Cool, that one will not bother us anymore. Note how we could still kill the process that was supposed to lock the CPU, as it was basically an infinite recursion.
 
-Let's see how processes interact to each other now:
+### Message passing
+
+Now let's create another process that wants to talk a bit:
 
 ```elixir
 defmodule WarBoy do
@@ -126,17 +158,97 @@ defmodule WarBoy do
 end
 
 nux = WarBoy.rise()
+```
+
+So we started the process and saved his `PID` on `nux` variable. Let's interact with him
+
+```elixir
 send(nux, :continue)
-send(nux, :continue)
-send(nux, :continue)
-send(nux, :continue)
+```
+
+And let him die:
+
+```elixir
 send(nux, :die)
 ```
 
 You see, it's just a matter of using the `send` and `receive` functions to communicate to each other.
 
-All process interaction is made through this messages, `send` adds the message to that process mailbox, and `receive` reads from the mailbox sequentially. If the mailbox is empty, `receive` will put the process on standby (timeout configurable).
+`send` adds the message to that process mailbox, and `receive` reads from the mailbox sequentially. If the mailbox is empty, `receive` will put the process on standby (timeout configurable).
+
+### Strongly isolated and share nothing
+
+One interesting thing is that it does not matter to other processes if a given process fail. Check this:
+
+```elixir
+for i <- 1..10 do
+  spawn(fn ->
+    if Integer.mod(i, 2) != 0, do: raise "That's odd, #{i}"
+    IO.puts("Hello CapiConf #{i}")
+  end)
+end
+```
+
+As you saw, the odd numbers failed, but the even still work flawlessly. They are strongly isolated.
+
+Now let's watch some friends eat together:
+
+```elixir
+defmodule Friend do
+  def start(name, food) do
+    spawn(__MODULE__, :live, [name, food])
+  end
+
+  def live(name, food) do
+    receive do
+      :eat -> 
+        case food do
+          [food | rest] ->
+            IO.puts("#{name} ate #{food}")
+            live(name, rest)
+          [] ->
+            IO.puts("Where is the food that was here?")
+            live(name, food)
+        end
+      {:done, pid} -> 
+        send(pid, food)
+    end
+  end
+
+  def eat(friend) do
+    send(friend, :eat)
+  end
+
+  def done(friend) do
+    send(friend, {:done, self()})
+
+    receive do
+      quantity -> quantity
+    end
+  end
+end
+
+food = ["pasta", "meatballs", "pizza", "panna cotta"]
+joey = Friend.start("Joey", food)
+rachel = Friend.start("Rachel", food)
+```
+
+We gave the same `food` for both friends, let's see what happens when eating:
+
+```elixir
+Friend.eat(joey)
+Friend.eat(joey)
+Friend.eat(joey)
+Friend.eat(joey)
+Friend.eat(joey)
+Friend.eat(rachel)
+
+Friend.done(joey)
+Friend.done(rachel)
+```
+
+So basically JOEY DOES NOT SHARE FOOOOOD! Actually, PROCESSES DO NOT SHARE ANYTHING!
 
 ## The Market
 
-
+Just run `mix phx.server` on this repo root folder and acess http://localhost:4000
