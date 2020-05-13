@@ -249,6 +249,20 @@ Friend.done(rachel)
 
 So basically JOEY DOES NOT SHARE FOOOOOD! Actually, PROCESSES DO NOT SHARE ANYTHING!
 
-## The Market
+## Demo
 
-Just run `mix phx.server` on this repo root folder and acess http://localhost:4000
+Just run `mix phx.server` on this repo root folder and acess http://localhost:4000, OR, you could try it live [in here](https://incomparable-light-flycatcher.gigalixirapp.com), it might get unavailable after some time though.
+
+Some details about this project:
+
+- You can use the modifier keys (CTRL, SHIFT, ALT, WIN/CMD) to create more than one customer (each key adds a different number of customers)
+- It is an [umbrella project](https://elixir-lang.org/getting-started/mix-otp/dependencies-and-umbrella-projects.html#umbrella-projects)
+- The domain implementation is on the subproject [`apps/market`](./apps/market/)
+- The files under [`lib`](./apps/market/lib) have the implementation of each type of process
+- I used OTP's [GenServer](https://hexdocs.pm/elixir/GenServer.html) to handle the processes communication easily (it is basically a design pattern for long living processes that communicate a lot)
+- The web implementation is on the folder [`apps/market_web`](./apps/market_web/)
+- It uses the framework [phoenix](https://hexdocs.pm/phoenix/overview.html) for routing
+- Used the command [`mix phx.new --no-ecto --live --umbrella`](https://hexdocs.pm/phoenix/Mix.Tasks.Phx.New.html) to generate the initial project
+- It uses [phoenix live view](https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html) to render the main view totally on the server and do live updates over websockets without the JS hassle you normally go to
+- Realtime updates from the domain processes are sent to the live view through [Phoenix PubSub](https://hexdocs.pm/phoenix_pubsub/Phoenix.PubSub.html)
+- The main view logic is basically on the files under [`lib/market_web/live`](./apps/market_web/lib/market_web/live/)
