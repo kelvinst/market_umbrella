@@ -13,7 +13,7 @@ use Mix.Config
 config :market_web, MarketWeb.Endpoint,
   url: [
     scheme: "https",
-    host: "#{System.get_env("APP_NAME")}.gigalixir.com",
+    host: "#{System.get_env("APP_NAME")}.gigalixirapp.com",
     port: 443
   ],
   cache_static_manifest: "priv/static/cache_manifest.json"
