@@ -12,10 +12,12 @@ defmodule MarketWeb.MarketLive do
 
   @impl true
   def handle_event("new_market", %{"multiplier" => multiplier}, socket) do
-    multiplier = case Integer.parse(multiplier) do
-      {x, _} -> x
-      :error -> 1
-    end
+    multiplier =
+      case Integer.parse(multiplier) do
+        {x, _} -> x
+        :error -> 1
+      end
+
     market = Market.create(multiplier)
     Market.subscribe(market)
 
@@ -39,10 +41,12 @@ defmodule MarketWeb.MarketLive do
   end
 
   def handle_event("new_cashier", %{"reductions" => reductions, "line" => line}, socket) do
-    reductions = case Integer.parse(reductions) do
-      {x, _} -> x
-      :error -> 999
-    end
+    reductions =
+      case Integer.parse(reductions) do
+        {x, _} -> x
+        :error -> 999
+      end
+
     cashiers = create_cashier(line, socket.assigns.cashiers, reductions)
     {:noreply, assign(socket, :cashiers, cashiers)}
   end
@@ -80,5 +84,4 @@ defmodule MarketWeb.MarketLive do
     cashier = Line.new_cashier(line, reductions)
     Map.put(cashiers, cashier.pid, cashier)
   end
-
 end

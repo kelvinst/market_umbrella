@@ -21,7 +21,9 @@ defmodule Market.Cashier do
   @impl true
   def init([line, reductions]) do
     schedule_work(line.market.multiplier)
-    {:ok, %__MODULE__{pid: self(), line: line, reductions: reductions, current_reduction: reductions}}
+
+    {:ok,
+     %__MODULE__{pid: self(), line: line, reductions: reductions, current_reduction: reductions}}
   end
 
   @impl true
@@ -35,12 +37,17 @@ defmodule Market.Cashier do
   end
 
   def handle_info(:work, %Cashier{current_reduction: 0} = state) do
-    new_state = next_customer(state, fn ->
-      %{state | current_reduction: state.reductions}
-    end, fn ->
-      Line.add_customer(state.line, state.customer)
-      %{state | current_reduction: state.reductions}
-    end)
+    new_state =
+      next_customer(
+        state,
+        fn ->
+          %{state | current_reduction: state.reductions}
+        end,
+        fn ->
+          Line.add_customer(state.line, state.customer)
+          %{state | current_reduction: state.reductions}
+        end
+      )
 
     {:noreply, new_state}
   end
