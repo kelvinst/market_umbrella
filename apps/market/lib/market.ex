@@ -8,7 +8,6 @@ defmodule Market do
 
   alias Market.Customer
   alias Market.Line
-  alias Market.Cashier
 
   defstruct [:pid, multiplier: 1, lines: [], customers: []]
 
